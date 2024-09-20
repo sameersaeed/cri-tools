@@ -2,10 +2,14 @@
 
 `crictl` provides a CLI for CRI-compatible container runtimes. This allows the CRI runtime developers to debug their runtime without needing to set up Kubernetes components.
 
-`crictl` has been GA since `v1.11.0` and is currently under active development. It is hosted at the [cri-tools](https://github.com/kubernetes-sigs/cri-tools) repository. We encourage the CRI developers to report bugs or help extend the coverage by adding more functionalities.
+`crictl` has been in General Availability (GA) since `v1.11.0` and is currently under active development. It is hosted at the [cri-tools](https://github.com/kubernetes-sigs/cri-tools) repository. We encourage the CRI developers to report bugs or help extend the coverage by adding more functionalities.
 
 The tool expects JSON or YAML encoded files as input and passes them to the
 corresponding container runtime using the [CRI API protocol](/vendor/k8s.io/cri-api/pkg/apis/runtime/v1/api.proto).
+
+## Prerequisites
+
+Before using `crictl`, please ensure you have installed and set up [containerd](github.com/containerd/containerd/blob/a448047386476027f96c005485ad5639473a5e48/docs/getting-started.md#installing-containerd) and [cni](github.com/containernetworking/cni?tab=readme-ov-file#running-the-plugins) on your system.
 
 ## Install crictl
 
@@ -16,7 +20,7 @@ corresponding container runtime using the [CRI API protocol](/vendor/k8s.io/cri-
 - using `wget`:
 
 ```sh
-VERSION="v1.30.0" # check latest version in /releases page
+VERSION=$(curl -s "https://api.github.com/repos/kubernetes-sigs/cri-tools/releases/latest" | grep -o '"tag_name": "[^"]*' | grep -o '[^"]*$')
 wget https://github.com/kubernetes-sigs/cri-tools/releases/download/$VERSION/crictl-$VERSION-linux-amd64.tar.gz
 sudo tar zxvf crictl-$VERSION-linux-amd64.tar.gz -C /usr/local/bin
 rm -f crictl-$VERSION-linux-amd64.tar.gz
@@ -25,7 +29,7 @@ rm -f crictl-$VERSION-linux-amd64.tar.gz
 - using `curl`:
 
 ```sh
-VERSION="v1.30.0" # check latest version in /releases page
+VERSION=$(curl -s "https://api.github.com/repos/kubernetes-sigs/cri-tools/releases/latest" | grep -o '"tag_name": "[^"]*' | grep -o '[^"]*$')
 curl -L https://github.com/kubernetes-sigs/cri-tools/releases/download/$VERSION/crictl-${VERSION}-linux-amd64.tar.gz --output crictl-${VERSION}-linux-amd64.tar.gz
 sudo tar zxvf crictl-$VERSION-linux-amd64.tar.gz -C /usr/local/bin
 rm -f crictl-$VERSION-linux-amd64.tar.gz
@@ -36,41 +40,40 @@ rm -f crictl-$VERSION-linux-amd64.tar.gz
 ```sh
 crictl [global options] command [command options] [arguments...]
 ```
-
-COMMANDS:
-
-- `attach`:                Attach to a running container
-- `create`:                Create a new container
-- `exec`:                  Run a command in a running container
-- `version`:               Display runtime version information
-- `images, image, img`:    List images
-- `inspect`:               Display the status of one or more containers
-- `inspecti`:              Return the status of one or more images
-- `imagefsinfo`:           Return image filesystem info
-- `inspectp`:              Display the status of one or more pods
-- `logs`:                  Fetch the logs of a container
-- `port-forward`:          Forward local port to a pod
-- `ps`:                    List containers
-- `pull`:                  Pull an image from a registry
-- `run`:                   Run a new container inside a sandbox
-- `runp`:                  Run a new pod
-- `rm`:                    Remove one or more containers
-- `rmi`:                   Remove one or more images
-- `rmp`:                   Remove one or more pods
-- `pods`:                  List pods
-- `start`:                 Start one or more created containers
-- `info`:                  Display information of the container runtime
-- `stop`:                  Stop one or more running containers
-- `stopp`:                 Stop one or more running pods
-- `update`:                Update one or more running containers
-- `config`:                Get and set `crictl` client configuration options
-- `stats`:                 List container(s) resource usage statistics
-- `statsp`:                List pod(s) resource usage statistics
-- `completion`:            Output bash shell completion code
-- `checkpoint`:            Checkpoint one or more running containers
-- `events, event`:         Stream the events of containers
-- `update-runtime-config`  Update the runtime configuration
-- `help, h`:               Shows a list of commands or help for one command
+| Command                 |  Description
+|-------------------------|---------------------------------------------------
+| `attach`                | Attach to a running container
+| `create`                | Create a new container
+| `exec`                  | Run a command in a running container
+| `version`               | Display runtime version information
+| `images, image, img`    | List images
+| `inspect`               | Display the status of one or more containers
+| `inspecti`              | Return the status of one or more images
+| `imagefsinfo`           | Return image filesystem info
+| `inspectp`              | Display the status of one or more pods
+| `logs`                  | Fetch the logs of a container
+| `port-forward`          | Forward local port to a pod
+| `ps`                    | List containers
+| `pull`                  | Pull an image from a registry
+| `run`                   | Run a new container inside a sandbox
+| `runp`                  | Run a new pod
+| `rm`                    | Remove one or more containers
+| `rmi`                   | Remove one or more images
+| `rmp`                   | Remove one or more pods
+| `pods`                  | List pods
+| `start`                 | Start one or more created containers
+| `info`                  | Display information of the container runtime
+| `stop`                  | Stop one or more running containers
+| `stopp`                 | Stop one or more running pods
+| `update`                | Update one or more running containers
+| `config`                | Get and set `crictl` client configuration options
+| `stats`                 | List container(s) resource usage statistics
+| `statsp`                | List pod(s) resource usage statistics
+| `completion`            | Output bash shell completion code
+| `checkpoint`            | Checkpoint one or more running containers
+| `events, event`         | Stream the events of containers
+| `update-runtime-config` | Update the runtime configuration
+| `help, h`               | Shows a list of commands or help for one command
 
 `crictl` by default connects on Unix to:
 
@@ -96,9 +99,9 @@ The endpoint can be set in three ways:
 If the endpoint is not set then it works as follows:
 
 - If the runtime endpoint is not set, `crictl` will by default try to connect using:
-  - containerd
-  - cri-o
-  - cri-dockerd
+  - `containerd`
+  - `cri-o`
+  - `cri-dockerd`
 - If the image endpoint is not set, `crictl` will by default use the runtime endpoint setting
 
 > Note: The default endpoints are now deprecated and the runtime endpoint should always be set instead.
@@ -138,17 +141,17 @@ via sudo (`sudo -E crictl ...`).
 
 ## Additional options
 
-- `--timeout`, `-t`: Timeout of connecting to server in seconds (default: `2s`).
-0 or less is interpreted as unset and converted to the default. There is no
-option for no timeout value set and the smallest supported timeout is `1s`
-- `--debug`, `-D`: Enable debug output
-- `--help`, `-h`: show help
-- `--version`, `-v`: print the version information of `crictl`
-- `--config`, `-c`: Location of the client config file (default: `/etc/crictl.yaml`). Can be changed by setting `CRI_CONFIG_FILE` environment variable. If not specified and the default does not exist, the program's directory is searched as well
+| Type              | Description
+|-------------------|-------------------------------------------------------------------------------------------
+| `--timeout`,`-t`  | Timeout of connecting to server in seconds (default: `2s`).<br>0 or less is interpreted as unset and converted to the default.<br>There is no option for no timeout value set and the smallest supported timeout is `1s`
+| `--debug`, `-D`   | Enable debug output
+| `--help`, `-h`    | Show help
+| `--version`, `-v` | Print the version information of `crictl`
+| `--config`, `-c`  | Location of the client config file (default: `/etc/crictl.yaml`).<br>Can be changed by setting `CRI_CONFIG_FILE` environment variable.<br>If not specified and the default does not exist, the program's directory is searched as well
 
 ## Client Configuration Options
 
-Use the `crictl` config command to get and set the `crictl` client configuration
+Use the `crictl config` command to get and set the `crictl` client configuration
 options.
 
 USAGE:
@@ -160,19 +163,23 @@ crictl config [command options] [<crictl options>]
 For example `crictl config --set debug=true` will enable debug mode when giving subsequent `crictl` commands.
 
 COMMAND OPTIONS:
-
-- `--get value`: Show the option value
-- `--set value`: Set option (can specify multiple or separate values with commas: opt1=val1,opt2=val2)
-- `--help`, `-h`: Show help (default: `false`)
+| Type           | Description
+|----------------|-------------------------------------------------------------------------------------------
+|`--get value`   | Show the option value
+| `--set value`  | Set option (can specify multiple or separate values with commas: `opt1=val1`, `opt2=val2`)
+| `--help`, `-h` | Show help (default: `false`)
+-------------------------------------------------------------------------------------------------------------
 
 `crictl` OPTIONS:
-
-- `runtime-endpoint`: Container runtime endpoint (no default value)
-- `image-endpoint`: Image endpoint (no default value)
-- `timeout`: Timeout of connecting to server (default: `2s`)
-- `debug`: Enable debug output (default: `false`)
-- `pull-image-on-create`: Enable pulling image on create requests (default: `false`)
-- `disable-pull-on-run`: Disable pulling image on run requests (default: `false`)
+| Type                   | Description
+|------------------------|------------------------------------------------------------
+| `runtime-endpoint`     | Container runtime endpoint (no default value)
+| `image-endpoint`       | Image endpoint (no default value)
+| `timeout`              | Timeout of connecting to server (default: `2s`)
+| `debug`                | Enable debug output (default: `false`)
+| `pull-image-on-create` | Enable pulling image on create requests (default: `false`)
+| `disable-pull-on-run`  | Disable pulling image on run requests (default: `false`)
+--------------------------------------------------------------------------------------
 
 > When enabled `pull-image-on-create` modifies the create container command to first pull the container's image.
 This feature is used as a helper to make creating containers easier and faster.
@@ -402,7 +409,7 @@ $ crictl create f84dd361f8dc51518ed291fbadd6db537b0496536c1d2d6c05ff943ce8c9a54f
 3e025dd50a72d956c4f14881fbb5b1080c9275674e95fb67f965f6478a957d60
 ```
 
-List containers and check the container is in Created state:
+List containers and check the container is in `Created` state:
 
 ```sh
 $ crictl ps -a
@@ -467,7 +474,7 @@ $ crictl run container-config.json pod-config.json
 b25b4f26e342969eb40d05e98130eee0846557d667e93deac992471a3b8f1cf4
 ```
 
-List containers and check the container is in Running state:
+List containers and check the container is in `Running` state:
 
 ```sh
 $ crictl ps
